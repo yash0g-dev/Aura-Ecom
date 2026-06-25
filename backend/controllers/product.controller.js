@@ -2,6 +2,7 @@ import asyncHandler from "express-async-handler";
 import Product from "../models/product.model.js"; // Kept consistent with your import path
 import { redis } from "../lib/redis.js"; // Corrected spelling typo
 import cloudinary from "../lib/cloudinary.js";
+import { uploadToCloudinary } from "../middlewares/upload.middleware.js";
 
 // @desc    Get all active products
 // @route   GET /api/products
@@ -89,55 +90,7 @@ export const getFeaturedProducts = asyncHandler(async (req, res) => {
   return res.status(200).json(featuredProducts);
 });
 
-// @desc    Create a new product (Cloudinary Array Integrated)
-
-
 // @route   POST /api/products
-export const createProduct = asyncHandler(async (req, res) => {
-  const {
-    name,
-    description,
-    price,
-    image,
-    department,
-    category,
-    subCategory,
-    brand,
-    stock,
-  } = req.body;
-
-  let cloudinaryResponse = null;
-  if (image) {
-    cloudinaryResponse = await cloudinary.uploader.upload(image, {
-      folder: "products",
-    });
-  }
-
-  const imageUrl = cloudinaryResponse?.secure_url
-    ? cloudinaryResponse.secure_url
-    : "";
-
-  // Synchronized field schema to align directly with your updated model
-  const product = await Product.create({
-    name,
-    description,
-    price,
-    images: imageUrl ? [imageUrl] : [], // Matches schema expected [String] array field
-    department,
-    category,
-    subCategory,
-    brand,
-    stock,
-  });
-
-  // Automatically refresh cache on mutation if this product is set to featured
-  if (product.isFeatured) {
-    await updateFeaturedProductsCache();
-  }
-
-  res.status(201).json(product);
-});
-
 // @desc    Delete a product
 // @route   DELETE /api/products/:id
 export const deleteProduct = asyncHandler(async (req, res) => {
@@ -258,3 +211,51 @@ export const getProductBySlug = asyncHandler(async (req, res) => {
   // matching what your Frontend Zustand store expects to destructure
   res.status(200).json({ product });
 });
+
+export const createProduct = async (req, res) => {
+  try {
+    let imageUrl = "";
+
+    // 1. Intercept the binary stream from the frontend file picker
+    if (req.file) {
+      imageUrl = await uploadToCloudinary(req.file.buffer);
+    } else {
+      return res
+        .status(400)
+        .json({ message: "A physical image file upload is required." });
+    }
+
+    const {
+      name,
+      description,
+      price,
+      department,
+      category,
+      subCategory,
+      brand,
+      stock,
+    } = req.body;
+
+    // 2. Commit the parsed parameters securely to your Mongoose model
+    const product = await Product.create({
+      name,
+      description,
+      price: Number(price), // Explicit type conversion handles string payloads from FormData
+      stock: Number(stock),
+      department,
+      category,
+      subCategory,
+      brand,
+      images: [imageUrl], // Stores the optimized secure Cloudinary CDN asset path
+    });
+
+    res.status(201).json({ success: true, product });
+  } catch (error) {
+    console.error("Product controller generation exception:", error);
+    res
+      .status(500)
+      .json({
+        message: "Failed to initialize and deploy product specifications.",
+      });
+  }
+};

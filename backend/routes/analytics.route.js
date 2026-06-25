@@ -5,28 +5,21 @@ import {
   dailySalesData,
 } from "../controllers/analytics.controller.js";
 import { protectRoute } from "../middlewares/auth.middleware.js";
-const Router = express.Router();
+const router = express.Router();
 
-Router.post(
-  "/",
-  protectRoute,
-  asyncHandler(async (req, res) => {
-    try {
-      const analyticsData = await getAnalyticData();
-      const endDate = new Date();
-      const startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const dailySalesData = await dailySalesData(startDate, endDate);
+router.post("/", async (req, res) => {
+  try {
+    const endDate = new Date();
+    const startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000); // Past 7 days
 
-      res.status(200).json({
-        analyticsData,
-        dailySalesData,
-      });
-    } catch (error) {
-      console.log("Error in analytics route");
-      res.status(400);
-      throw new Error("Error producing analytics", error);
-    }
-  }),
-);
+    const analyticsData = await getAnalyticData();
+    const salesData = await dailySalesData(startDate, endDate);
 
-export default Router;
+    res.status(200).json({ analyticsData, dailySalesData: salesData });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ success: false, message: "Server error compiling analytics" });
+  }
+});
+export default router;
