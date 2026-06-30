@@ -30,7 +30,7 @@ export const protectRoute = asyncHandler(async (req, res, next) => {
 });
 
 export const adminRoute = asyncHandler((req, res, next) => {
-  if (req.user && req.user.role === "admin") {
+  if (req.user && req.user.role.trim() === "admin") {
     next();
   } else {
     res.status(403);
