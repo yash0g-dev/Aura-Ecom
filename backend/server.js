@@ -19,18 +19,13 @@ const app = express();
 
 const PORT = process.env.PORT || 5000;
 
+const allowedOrigins = ["http://localhost:3000", process.env.CLIENT_UTL].filter(
+  Boolean,
+);
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000",
-      "http://localhost:5173",
-      "http://localhost:5174",
-      "http://localhost:5175",
-      "http://localhost:5176",
-      "http://localhost:5177",
-      "http://localhost:5178",
-      "http://localhost:5179",
-    ],
+    origin: allowedOrigins,
     credentials: true,
   }),
 );
@@ -56,6 +51,7 @@ app.use("/api/coupons", couponRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/analytics", analyticsRoutes);
+
 app.use((req, res, next) => {
   console.log(
     `⚠️ [TRAFFIC LOG] Request missed all routes! Hitting fallback / errorHandler.`,
