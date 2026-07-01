@@ -52,7 +52,7 @@ app.use("/api/coupons", couponRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/analytics", analyticsRoutes);
-app.use("/api/keepalive", keepAliveRouter);
+app.use("/keepalive", keepAliveRouter);
 
 app.use((req, res, next) => {
   console.log(
