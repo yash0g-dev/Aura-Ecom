@@ -3,13 +3,12 @@ import jwt from "jsonwebtoken";
 import { redis } from "../lib/redis.js";
 import asyncHandler from "express-async-handler";
 
-
 const isProd = process.env.NODE_ENV === "production";
 
 const cookieOptions = {
   httpOnly: true,
   secure: isProd,
-  sameSite: isProd ? ("none" as const) : ("lax" as const),
+  sameSite: isProd ? "none" : "lax",
 };
 
 function generateToken(userId) {
