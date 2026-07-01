@@ -209,7 +209,7 @@ export const getProductBySlug = asyncHandler(async (req, res) => {
     throw new Error(`Product not found with slug: ${slug}`);
   }
 
-  res.status(200).json( product );
+  res.status(200).json(product);
 });
 
 export const createProduct = async (req, res) => {
@@ -218,7 +218,7 @@ export const createProduct = async (req, res) => {
 
     // 1. Intercept the binary stream from the frontend file picker
     if (req.file) {
-      imageUrl = await uploadToCl      toast.error("Failed to load featured products"); oudinary(req.file.buffer);
+      imageUrl = await uploadToCloudinary(req.file.buffer);
     } else {
       return res
         .status(400)
