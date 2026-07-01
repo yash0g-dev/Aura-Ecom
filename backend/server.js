@@ -23,6 +23,7 @@ const PORT = process.env.PORT || 5000;
 const allowedOrigins = ["http://localhost:3000", process.env.CLIENT_URL].filter(
   Boolean,
 );
+console.log("allowedOrigins", allowedOrigins);
 
 app.use(
   cors({
