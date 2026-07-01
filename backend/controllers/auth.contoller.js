@@ -3,6 +3,15 @@ import jwt from "jsonwebtoken";
 import { redis } from "../lib/redis.js";
 import asyncHandler from "express-async-handler";
 
+
+const isProd = process.env.NODE_ENV === "production";
+
+const cookieOptions = {
+  httpOnly: true,
+  secure: isProd,
+  sameSite: isProd ? ("none" as const) : ("lax" as const),
+};
+
 function generateToken(userId) {
   const accessToken = jwt.sign({ userId }, process.env.ACCESS_TOKEN_SECRET, {
     expiresIn: "15m",
@@ -24,15 +33,11 @@ async function storeRefreshToken(userId, refreshToken) {
 
 const setCookies = (res, accessToken, refreshToken) => {
   res.cookie("accessToken", accessToken, {
-    httpOnly: true, //prevents XSS attack
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict", //prevents CSRF
+    ...cookieOptions,
     maxAge: 15 * 60 * 1000, //15mins
   });
   res.cookie("refreshToken", refreshToken, {
-    httpOnly: true, //prevents XSS attack
-    secure: process.env.NODE_ENV == "production",
-    sameSite: "strict", //prevents CSRF
+    ...cookieOptions,
     maxAge: 7 * 24 * 60 * 60 * 1000, //7days
   });
 };
@@ -121,8 +126,8 @@ export const logout = asyncHandler(async (req, res) => {
     else throw new Error(" Could not verify Access Token");
   }
   await redis.del(`refreshToken:${decoded.userId}`);
-  res.clearCookie("refreshToken");
-  res.clearCookie("accessToken");
+  res.clearCookie("refreshToken", cookieOptions);
+  res.clearCookie("accessToken", cookieOptions);
   res.status(200).json({
     userId: decoded.userId,
     message: "successfully logged out",
@@ -162,9 +167,7 @@ export const refreshToken = asyncHandler(async (req, res) => {
     },
   );
   res.cookie("accessToken", accessToken, {
-    httpOnly: true, //prevents XSS attack
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict", //prevents CSRF
+    ...cookieOptions,
     maxAge: 15 * 60 * 1000, //15mins
   });
   res.status(201).json({
