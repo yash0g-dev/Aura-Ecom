@@ -11,7 +11,7 @@ import {
   getProductBySlug,
 } from "../controllers/product.controller.js";
 import { protectRoute, adminRoute } from "../middlewares/auth.middleware.js";
-import { upload } from "../middlewares/upload.middleware.js"; // 🧠 UPDATE 1: Import the multer configuration
+import { upload } from "../middlewares/upload.middleware.js";
 
 const router = express.Router();
 
@@ -28,7 +28,6 @@ router.get("/recommendations", getRecommendedProducts);
 router.get("/single/:slug", getProductBySlug);
 
 // Protected Admin-Only Routes
-// 📸 UPDATE 2: Injected upload.single("image") to handle the multipart/form-data stream
 router.post(
   "/",
   protectRoute,
