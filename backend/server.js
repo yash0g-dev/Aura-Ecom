@@ -6,6 +6,7 @@ import couponRoutes from "./routes/coupon.route.js";
 import paymentRoutes from "./routes/payment.route.js";
 import orderRoutes from "./routes/order.route.js";
 import analyticsRoutes from "./routes/analytics.route.js";
+import keepAliveRouter from "./routes/health.route.js";
 import dotenv from "dotenv";
 import { connectDB } from "./lib/db.js";
 import cookieParser from "cookie-parser";
@@ -51,6 +52,7 @@ app.use("/api/coupons", couponRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/keepalive", keepAliveRouter);
 
 app.use((req, res, next) => {
   console.log(
