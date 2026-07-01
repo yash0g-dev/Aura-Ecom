@@ -2,64 +2,85 @@ import asyncHandler from "express-async-handler";
 import Product from "../models/product.model.js";
 
 export const getCartProducts = asyncHandler(async (req, res) => {
-  const products = await Product.find({ _id: { $in: req.user.cartItems } });
-  const cartItems = products.map((product) => {
-    const item = req.user.cartItems.find(
-      (cartItem) => cartItem.id === product.id,
-    );
-    return { ...product.toObject(), quantity: item.quantity };
-  });
-  res.status(200).json(cartItems);
+  await req.user.populate("cartItems.product");
+
+  const formattedCart = req.user.cartItems
+    .filter((item) => item.product != null) // Safety check in case a product was deleted from the DB
+    .map((item) => ({
+      ...item.product.toObject(),
+      quantity: item.quantity,
+    }));
+
+  res.status(200).json(formattedCart);
 });
 
+// 2. ADD TO CART
 export const addToCart = asyncHandler(async (req, res) => {
   const { productId } = req.body;
   const user = req.user;
+
   try {
-    const existingItem = user.cartItems.find((item) => item.id === productId);
+    const existingItem = user.cartItems.find(
+      (item) => item.product.toString() === productId.toString(),
+    );
+
     if (existingItem) {
-      existingItem.cartItems += 1;
+      existingItem.quantity += 1;
     } else {
-      user.cartItems.push(productId);
+      user.cartItems.push({ product: productId, quantity: 1 });
     }
+
+    await user.save();
+    res.status(200).json(user.cartItems);
   } catch (error) {
     res.status(500);
-    console.error("something went wrong while add item to cart ");
-    throw new Error(`failed operation adding to cart ${error.message}`);
+    console.error("Something went wrong while adding item to cart", error);
+    throw new Error(`Failed operation adding to cart: ${error.message}`);
   }
-
-  await user.save();
 });
 
+// 3. REMOVE FROM CART: Updated to check 'item.product'
 export const removeAllFromCart = asyncHandler(async (req, res) => {
   const { productId } = req.body;
   const user = req.user;
+
   if (!productId) {
-    user.cartItems = [];
+    user.cartItems = []; // Clear entire cart
   } else {
-    user.cartItems = user.cartItems.filter((item) => item.id !== productId);
+    user.cartItems = user.cartItems.filter(
+      (item) => item.product.toString() !== productId.toString(),
+    );
   }
+
   await user.save();
-  res.json(user.cartItems);
+  res.status(200).json(user.cartItems);
 });
 
+// 4. UPDATE QUANTITY: Updated to check 'item.product'
 export const updateQuantity = asyncHandler(async (req, res) => {
   const { id: productId } = req.params;
   const { quantity } = req.body;
   const user = req.user;
-  const existingItem = user.cartItems.find((item) => item.id === productId);
+
+  const existingItem = user.cartItems.find(
+    (item) => item.product.toString() === productId.toString(),
+  );
+
   if (existingItem) {
     if (quantity === 0) {
-      user.cartItems = user.cartItems.filter((item) => item.id !== productId);
+      // Remove item if quantity hits 0
+      user.cartItems = user.cartItems.filter(
+        (item) => item.product.toString() !== productId.toString(),
+      );
       await user.save();
-      return res.json(user.cartItems);
+      return res.status(200).json(user.cartItems);
     }
+
     existingItem.quantity = quantity;
     await user.save();
-    res.json(user.cartItems);
+    res.status(200).json(user.cartItems);
   } else {
     res.status(404);
-    throw new Error("product not found");
+    throw new Error("Product not found in cart");
   }
 });
-
