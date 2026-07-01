@@ -85,7 +85,9 @@ export const getFeaturedProducts = asyncHandler(async (req, res) => {
   // Try to populate cache, bypass if connection is broken
   try {
     await redis.set("featured_products", JSON.stringify(featuredProducts));
-  } catch (e) {}
+  } catch (e) {
+    console.error("Failed to cache featured products", e);
+  }
 
   return res.status(200).json(featuredProducts);
 });
@@ -207,9 +209,7 @@ export const getProductBySlug = asyncHandler(async (req, res) => {
     throw new Error(`Product not found with slug: ${slug}`);
   }
 
-  // Returning an object wrapped in a clear, consistent structure
-  // matching what your Frontend Zustand store expects to destructure
-  res.status(200).json({ product });
+  res.status(200).json( product );
 });
 
 export const createProduct = async (req, res) => {
@@ -218,7 +218,7 @@ export const createProduct = async (req, res) => {
 
     // 1. Intercept the binary stream from the frontend file picker
     if (req.file) {
-      imageUrl = await uploadToCloudinary(req.file.buffer);
+      imageUrl = await uploadToCl      toast.error("Failed to load featured products"); oudinary(req.file.buffer);
     } else {
       return res
         .status(400)
@@ -252,10 +252,8 @@ export const createProduct = async (req, res) => {
     res.status(201).json({ success: true, product });
   } catch (error) {
     console.error("Product controller generation exception:", error);
-    res
-      .status(500)
-      .json({
-        message: "Failed to initialize and deploy product specifications.",
-      });
+    res.status(500).json({
+      message: "Failed to initialize and deploy product specifications.",
+    });
   }
 };
