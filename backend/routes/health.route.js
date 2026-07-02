@@ -6,7 +6,7 @@ const router = Router();
 
 router.get("/", async (req, res) => {
   try {
-    await mongooose.connection.db?.admin().ping();
+    await mongoose.connection.db?.admin().ping();
     const porductCount = await Product.estimatedDocumentCount();
     res.status(200).json({
       status: "healthy",
